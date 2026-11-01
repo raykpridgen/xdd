@@ -52,24 +52,23 @@ xddfunc_parse_single_target_scoped_options(xdd_plan_t *planp, int32_t argc, char
 		int funci = 0;
 		
 		// Scan parse table to find a match
-		while (xdd_func[funci].func_name) 
-		{
+		while (xdd_func[funci].func_name) {
+			// Match found
 			if ((strcmp(xdd_func[funci].func_name, argv[pos]) == 0) ||
-			    (strcmp(xdd_func[funci].func_alt, argv[pos]) == 0)) 
-			{
-				if (xddfunc_option_is_target_scope_meta(xdd_func[funci].func_name)) 
-				{
+			    (strcmp(xdd_func[funci].func_alt, argv[pos]) == 0)) {
+				// Found meta argument, skip it
+				if (xddfunc_option_is_target_scope_meta(xdd_func[funci].func_name)) {
 					break;
 				}
-				char **argvp = &argv[pos];
+
+				// Execute corresponding function for this parameter
+				char **argvp = &argv[pos]; // Align argv with unprocessed args
 				int func_status = xdd_func[funci].func_ptr(planp, argc - pos, argvp, flags, target_idx);
-				if (func_status == 0) 
-				{
+				if (func_status == 0) {
 					xddfunc_invalid_option(pos + 1, &argv[pos], flags);
 					exit(XDD_RETURN_VALUE_INVALID_ARGUMENT);
 				} 
-				else if (func_status == -1) 
-				{
+				else if (func_status == -1) {
 					exit(XDD_RETURN_VALUE_INVALID_OPTION);
 				}
 				pos += func_status;
@@ -79,8 +78,7 @@ xddfunc_parse_single_target_scoped_options(xdd_plan_t *planp, int32_t argc, char
 			funci++;
 		}
 		
-		if (func_not_found) 
-		{
+		if (func_not_found) {
 			xddfunc_invalid_option(pos + 1, &argv[pos], flags);
 			exit(XDD_RETURN_VALUE_INVALID_OPTION);
 		}
@@ -89,7 +87,7 @@ xddfunc_parse_single_target_scoped_options(xdd_plan_t *planp, int32_t argc, char
 }
 
 /*
- * Same as above but apply each scoped option to every target in [t_first, t_last).
+ * Parse target and any target-specific parameters, apply each scoped option to every target in [t_first, t_last).
  * Token advance uses one handler call (first target index) so multi-token options
  * count correctly in phase 2.
  */
@@ -103,65 +101,56 @@ xddfunc_parse_multi_target_scoped_options(xdd_plan_t *planp, int32_t argc, char 
 	int func_not_found;
 	char **argvp;
 
-	// While valid position, argument exists, and it is not preceeded by a dash
+	// While valid position, argument exists, and it is not preceded by a dash
 	while (pos < argc && argv[pos] != NULL && argv[pos][0] != '-') {
 		func_not_found = 1;
 		funci = 0;
 
 		// Scan parse table for a match
 		while (xdd_func[funci].func_name) {
+			// Match found
 			if ((strcmp(xdd_func[funci].func_name, argv[pos]) == 0) ||
-			    (strcmp(xdd_func[funci].func_alt, argv[pos]) == 0)) 
-			{
+			    (strcmp(xdd_func[funci].func_alt, argv[pos]) == 0)) {
 				// Ensure specifier is not target or targets, causing a loop
-				if (xddfunc_option_is_target_scope_meta(xdd_func[funci].func_name)) 
-				{
+				if (xddfunc_option_is_target_scope_meta(xdd_func[funci].func_name)) {
 					break;
 				}
 
-				// Prepare function for execution
-				argvp = &argv[pos];
+				argvp = &argv[pos]; // Align argv with unprocessed args
 
-				// Phase 1
-				if (flags & XDD_PARSE_PHASE1) 
-				{
+				// Phase 1: Targets get created and parameters applied.
+				if (flags & XDD_PARSE_PHASE1) {
 					// For each new target
-					for (j = t_first; j < t_last; j++) 
-					{
+					for (j = t_first; j < t_last; j++) {
 						// Execute function on target
 						func_status = (int)xdd_func[funci].func_ptr(planp, argc - pos, argvp, flags, j);
 						
 						// No tokens parsed
-						if (func_status == 0) 
-						{
+						if (func_status == 0) {
 							xddfunc_invalid_option(pos + 1, &argv[pos], flags);
 							exit(XDD_RETURN_VALUE_INVALID_ARGUMENT);
 						} 
 						
 						// Error occured
-						else if (func_status == -1) 
-						{
+						else if (func_status == -1) {
 							exit(XDD_RETURN_VALUE_INVALID_OPTION);
 						}
 					}
 				}
 
-				// Phase 2
-				else 
-				{
+				// Phase 2: Check one target, keep status for phase 2 alignment
+				else {
 					// Execute function on a single target for sanity check
 					func_status = (int)xdd_func[funci].func_ptr(planp, argc, argvp, flags, t_first);
-					
-					// No tokens parsed 
-					if (func_status == 0) 
-					{
+
+					// No tokens parsed
+					if (func_status == 0) {
 						xddfunc_invalid_option(pos + 1, &argv[pos], flags);
 						exit(XDD_RETURN_VALUE_INVALID_ARGUMENT);
-					} 
-					
+					}
+
 					// Error occured
-					else if (func_status == -1) 
-					{
+					else if (func_status == -1) {
 						exit(XDD_RETURN_VALUE_INVALID_OPTION);
 					}
 				}

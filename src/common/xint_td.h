@@ -56,7 +56,7 @@ struct xint_target_data {
 	uint64_t			td_target_options; 	// I/O Options specific to each target
 	int32_t   			td_file_desc;		// File Descriptor for the target device/file
 	int32_t				td_open_flags;		// Flags used during open processing of a target
-	int32_t				td_xfer_size;  		// Number of bytes per request
+	uint64_t				td_xfer_size;  		// Number of bytes per request
 	int32_t				td_filetype;  		// Type of file: regular, device, socket, ...
 	int64_t				td_filesize;  		// Size of target file in bytes
 	uint64_t			td_target_ops;  	// Total number of ops to perform on behalf of a "target"
